@@ -1,8 +1,25 @@
 {
   "name": "mcp-ansible-drupal",
+  "displayName": "Ansible-Drupal MCP Server",
+  "description": "A Model Context Protocol (MCP) server that automates the setup and management of Ansible-Drupal configurations focused on Drupal projects. This MCP includes cloning the Ansible-Drupal repository, environment preparation, and cleanup via a Model Context Protocol (MCP) toolset in VS Code.",
   "version": "1.0.0",
+  "publisher": "webfer",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
   "type": "module",
   "main": "dist/server.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "mcp-ansible-drupal.start",
+        "title": "Start Ansible-Drupal MCP Server"
+      }
+    ]
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js"
@@ -14,5 +31,17 @@
   "devDependencies": {
     "@types/node": "^20.5.1",
     "typescript": "^5.2.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/webfer/MCP-Ansible-Drupal"
+  },
+  "keywords": [
+    "mcp",
+    "drupal",
+    "Ansible",
+    "model-context-protocol",
+    "ai",
+    "server"
+  ]
 }
