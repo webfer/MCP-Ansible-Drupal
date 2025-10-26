@@ -1,47 +1,17 @@
 {
   "name": "mcp-ansible-drupal",
-  "displayName": "Ansible-Drupal MCP Server",
-  "description": "A Model Context Protocol (MCP) server that automates the setup and management of Ansible-Drupal configurations focused on Drupal projects.",
+  "description": "A Model Context Protocol (MCP) server that automates Ansible-Drupal configurations.",
   "version": "1.0.0",
-  "publisher": "webfer",
   "author": {
     "name": "Fernando A Castro",
     "url": "https://github.com/webfer"
   },
-  "engines": {
-    "vscode": "^1.105.0"
-  },
-  "categories": [
-    "Other"
-  ],
   "type": "module",
-  "main": "./dist/extension.js",
-  "contributes": {
-    "mcpServers": [
-      {
-        "id": "mcp-ansible-drupal",
-        "title": "MCP Ansible Drupal",
-        "module": "./dist/server.js"
-      }
-    ],
-    "commands": [
-      {
-        "command": "mcp-ansible-drupal.start",
-        "title": "Start Ansible-Drupal MCP Server"
-      }
-    ]
-  },
-  "activationEvents": [
-    "onCommand:mcp-ansible-drupal.start"
-  ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "vscode:prepublish": "webpack --mode production",
     "compile": "webpack --mode development",
-    "watch": "webpack --watch",
-    "package": "vsce package",
-    "publish": "vsce publish"
+    "watch": "webpack --watch"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.1.0",
@@ -49,7 +19,6 @@
   },
   "devDependencies": {
     "@types/node": "^20.5.1",
-    "@types/vscode": "^1.105.0",
     "ajv": "^8.17.1",
     "ajv-keywords": "^5.1.0",
     "clean-webpack-plugin": "^4.0.0",

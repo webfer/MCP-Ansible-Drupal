@@ -10,8 +10,7 @@ const __dirname = path.dirname(__filename);
 export default {
   target: 'node',
   entry: {
-    extension: './src/extension.ts',
-    server: './src/server.ts', // 👈 your MCP server entry
+    server: './src/server.ts',
   },
   output: {
     path: path.resolve(__dirname, 'dist'),
