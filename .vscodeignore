@@ -1,0 +1,15 @@
+# Exclude dev files
+.vscode/
+node_modules/
+**/tsconfig.json
+**/*.ts
+.vscodeignore
+.gitignore
+README.md
+CHANGELOG.md
+
+# Keep only what’s needed
+!dist/**
+!server/**
+!package.json
+!LICENSE

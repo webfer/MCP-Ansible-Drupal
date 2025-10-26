@@ -1,4 +1,4 @@
-export { AnsibleSetUpTool } from './ansibleSetupTool.js';
-export { CloneRepositoryTool } from './cloneRepositoryTool.js';
-export { AnsibleCleanUpTool } from './ansibleCleanUpTool.js';
-export type {} from './cloneRepositoryTool.js';
+export { AnsibleSetUpTool } from './ansibleSetupTool';
+export { CloneRepositoryTool } from './cloneRepositoryTool';
+export { AnsibleCleanUpTool } from './ansibleCleanUpTool';
+export type {} from './cloneRepositoryTool';
