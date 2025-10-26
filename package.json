@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.5.1",
+    "@types/vscode": "^1.105.0",
     "typescript": "^5.2.2"
   },
   "repository": {
