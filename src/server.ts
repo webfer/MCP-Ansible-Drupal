@@ -11,12 +11,12 @@ import {
   CloneRepositoryTool,
   AnsibleSetUpTool,
   AnsibleCleanUpTool,
-} from './tools/index.js';
+} from './tools';
 import {
   GetAnsibleDrupalRepoUrl,
   RepositoryUrlArguments,
   GetAnsibleSetupPrompt,
-} from './prompts/index.js';
+} from './prompts';
 
 const ansibleTool = new AnsibleSetUpTool();
 const cleanupTool = new AnsibleCleanUpTool();

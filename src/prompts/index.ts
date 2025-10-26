@@ -1,3 +1,3 @@
-export { GetAnsibleSetupPrompt } from './ansibleSetupPrompt.js';
-export { GetAnsibleDrupalRepoUrl } from './cloneRepositoryPrompt.js';
-export type { RepositoryUrlArguments } from './cloneRepositoryPrompt.js';
+export { GetAnsibleSetupPrompt } from './ansibleSetupPrompt';
+export { GetAnsibleDrupalRepoUrl } from './cloneRepositoryPrompt';
+export type { RepositoryUrlArguments } from './cloneRepositoryPrompt';
