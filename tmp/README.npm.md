@@ -15,69 +15,62 @@
 
 ---
 
-## 📁 File Structure
-
-```bash
-MCP-Ansible-Drupal/
-├── LICENSE
-├── package.json
-├── tsconfig.json
-├── src/
-│   ├── server.ts
-│   └── prompts/
-│       ├── ansibleSetupPrompt.ts
-│       ├── cloneRepositoryPrompt.ts
-│       └── index.ts
-├── tools/
-│   ├── ansibleCleanUpTool.ts
-│   ├── ansibleSetupTool.ts
-│   ├── cloneRepositoryTool.ts
-│   └── index.ts
-└── README.md
-```
-
----
-
 ## ✅ Requirements
 
 - Node.js 18 or higher
-- TypeScript
 - Ansible (for target Drupal projects)
 
 ---
 
 ## 🛠️ Installation
 
-1. Clone this repository into your project directory.
-2. Install dependencies:
+1. Using npm.
 
    ```bash
-   npm install
-   ```
-
-3. Build the project:
-
-   ```bash
-   npm run build
+   npm i @webfer/mcp-ansible-drupal
    ```
 
 ---
 
+2. Using yarn.
+
+   ```bash
+   yarn add @webfer/mcp-ansible-drupal
+   ```
+
+---
+
+## 🚀 Usage
+
+1. Configure the MCP Ansible-Drupal server:
+
+- Add the following entry to your MCP settings file, either `.vscode/mcp.json` or `mcp.json` in your project root.
+- This enables the Ansible-Drupal automation tools in your workspace.
+
+```bash
+{
+  "servers": {
+    "ansible-drupal": {
+      "command": "npx",
+      "args": ["-y", "@webfer/mcp-ansible-drupal"],
+      "description": "MCP Ansible-Drupal Server"
+    }
+  }
+}
+
+```
+
+---
+
 ## 🎯 Behavior
+
+This MCP Ansible Drupal toolset includes the following functionalities:
 
 - **Clone Repository:** Uses the `cloneRepositoryTool` and `cloneRepositoryPrompt` to fetch the Ansible-Drupal repository into a temporary directory (`/temporal`).
 - **Ansible Setup:** Moves `ansible.cfg` and `vault_pass.txt` from the temporary directory to the project root using `ansibleSetupTool` and `ansibleSetupPrompt`.
 - **Cleanup:** Removes `/temporal` and `/temporal/ansible-drupal` directories after setup with `ansibleCleanUpTool`.
 - **Prompts:** Each tool is paired with a prompt for user interaction or automation.
 - **Server:** The `server.ts` file can be used to expose these functionalities as part of an MCP server or CLI.
-
----
-
-## 🧩 Developer Notes
-
-- Tools and prompts are modular and can be extended for additional Ansible or Drupal automation tasks.
-- Designed for integration with larger MCP-based automation or orchestration systems.
-- Ensure Ansible is installed and configured on the target environment for full functionality.
 
 ---
 

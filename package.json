@@ -1,12 +1,17 @@
 {
-  "name": "mcp-ansible-drupal",
+  "name": "@webfer/mcp-ansible-drupal",
   "description": "A Model Context Protocol (MCP) server that automates Ansible-Drupal configurations.",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "author": {
     "name": "Fernando A Castro",
     "url": "https://github.com/webfer"
   },
+  "license": "MIT",
+  "main": "dist/server.js",
   "type": "module",
+  "bin": {
+    "mcp-ansible-drupal": "dist/server.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
@@ -15,6 +20,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.1.0",
+    "@webfer/mcp-ansible-drupal": "^1.0.2",
     "simple-git": "^3.19.1"
   },
   "devDependencies": {
