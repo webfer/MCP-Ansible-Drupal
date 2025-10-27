@@ -1,21 +1,23 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { CleanWebpackPlugin } from 'clean-webpack-plugin';
-import CopyPlugin from 'copy-webpack-plugin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/** @type {import('webpack').Configuration} */
 export default {
   target: 'node',
-  entry: {
-    server: './src/server.ts',
-  },
+  mode: 'production',
+  entry: './src/server.ts',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: '[name].js',
-    libraryTarget: 'commonjs2',
+    filename: 'server.js',
+    library: { type: 'module' },
+    module: true,
+    chunkFormat: 'module',
+  },
+  experiments: {
+    outputModule: true,
   },
   resolve: {
     extensions: ['.ts', '.js'],
@@ -29,19 +31,6 @@ export default {
       },
     ],
   },
-  plugins: [
-    new CleanWebpackPlugin(),
-    new CopyPlugin({
-      patterns: [
-        // Copy package.json for runtime use
-        { from: 'package.json', to: 'package.json' },
-        // If you have static assets in `server/`, still include them
-        { from: 'server', to: 'server', noErrorOnMissing: true },
-      ],
-    }),
-  ],
-  externals: {
-    vscode: 'commonjs vscode',
-  },
+  plugins: [new CleanWebpackPlugin()],
   devtool: 'source-map',
 };
