@@ -193,7 +193,7 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.log('🚀 MCP Ansible-Drupal server is running.');
+  console.error('🚀 MCP Ansible-Drupal server is running.');
 }
 
 main().catch((error: Error) => {
