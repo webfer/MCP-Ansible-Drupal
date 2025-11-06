@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -11,12 +13,12 @@ import {
   CloneRepositoryTool,
   AnsibleSetUpTool,
   AnsibleCleanUpTool,
-} from './tools';
+} from './tools/index.js';
 import {
   GetAnsibleDrupalRepoUrl,
   RepositoryUrlArguments,
   GetAnsibleSetupPrompt,
-} from './prompts';
+} from './prompts/index.js';
 
 const ansibleTool = new AnsibleSetUpTool();
 const cleanupTool = new AnsibleCleanUpTool();
@@ -191,7 +193,7 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.log('🚀 MCP Ansible-Drupal server is running.');
+  console.error('🚀 MCP Ansible-Drupal server is running.');
 }
 
 main().catch((error: Error) => {

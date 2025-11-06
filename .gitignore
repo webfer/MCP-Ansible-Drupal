@@ -54,7 +54,7 @@ web/sites/*/files/*
 !/**/sites/default/files/gin-custom.css
 web/sites/*/private
 private
-tmp
+!tmp
 .ddev
 
 # Ignore .htaccess
