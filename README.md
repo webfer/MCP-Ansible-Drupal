@@ -73,6 +73,18 @@ MCP-Ansible-Drupal/
 
 ---
 
+## 💡 Prompt Example
+
+You can use the following prompt to automate the full Ansible-Drupal setup process:
+
+```
+Clone the Ansible-Drupal repository into the /temporal directory using the cloneRepository tool.
+After cloning, run the ansibleSetup tool to move the Ansible configuration files and tools to the project root.
+Then run the ansibleCleanup tool to completely remove the /temporal directory, even if it contains other files or folders.
+```
+
+---
+
 ## 🧩 Developer Notes
 
 - Tools and prompts are modular and can be extended for additional Ansible or Drupal automation tasks.
