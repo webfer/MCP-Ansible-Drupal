@@ -24,11 +24,10 @@ export async function executeDeployment(options) {
     if (!paths.valid) {
         throw new Error(`Failed to resolve project paths: ${paths.errors?.join(', ')}`);
     }
-    // ✅ Step 3: Verify vault file
-    const deployEnv = process.env.DEPLOY_ENV === 'live' ? 'live' : 'stage';
+    // ✅ Step 3: Verify vault file (use the selected environment and projectRoot)
     const vaultCheck = verifyVaultFile({
-        projectRoot: process.cwd(),
-        environment: deployEnv,
+        projectRoot,
+        environment,
     });
     if (!vaultCheck.valid) {
         throw new Error(`Vault file invalid: ${vaultCheck.errors?.join(', ')}`);

@@ -2,4 +2,5 @@ export { AnsibleSetUpTool } from './ansibleSetupTool.js';
 export { CloneRepositoryTool } from './cloneRepositoryTool.js';
 export { AnsibleCleanUpTool } from './ansibleCleanUpTool.js';
 export { ValidateDeployTool } from './validateDeployTool.js';
-export type {} from './cloneRepositoryTool.js';
+export { DecryptVaultTool } from './decryptVaultTool.js';
+export { EncryptVaultTool } from './encryptVaultTool.js';

@@ -2,6 +2,8 @@
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import path from 'path';
+
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
@@ -14,6 +16,8 @@ import {
   AnsibleSetUpTool,
   AnsibleCleanUpTool,
   ValidateDeployTool,
+  DecryptVaultTool,
+  EncryptVaultTool,
 } from './tools/index.js';
 import {
   GetAnsibleDrupalRepoUrl,
@@ -103,6 +107,36 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['environment', 'action'],
       },
     },
+    {
+      name: 'decryptVaultFile',
+      description: 'Decrypts the Ansible Vault file for a given environment.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          environment: {
+            type: 'string',
+            enum: ['stage', 'live'],
+            description: 'Deployment environment for the vault file.',
+          },
+        },
+        required: ['environment'],
+      },
+    },
+    {
+      name: 'encryptVaultFile',
+      description: 'Encrypts the Ansible Vault file for a given environment.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          environment: {
+            type: 'string',
+            enum: ['stage', 'live'],
+            description: 'The environment whose vault file will be encrypted.',
+          },
+        },
+        required: ['environment'],
+      },
+    },
   ],
 }));
 
@@ -162,7 +196,46 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     case 'validateDeploy': {
       const tool = new ValidateDeployTool();
-      return await tool.run(args as any);
+      const safeArgs = (request.params.args ?? request.params) as any;
+      return await tool.run(safeArgs);
+    }
+
+    case 'decryptVaultFile': {
+      const tool = new DecryptVaultTool();
+      const safeArgs = {
+        projectRoot: path.resolve(process.cwd()),
+        ...(request.params.args ?? request.params),
+      };
+
+      const serverDebug = {
+        type: 'text' as const,
+        text: `[SERVER DEBUG] Invoking decryptVaultFile with safeArgs: ${JSON.stringify(
+          safeArgs
+        )}`,
+      };
+
+      const result = await tool.run(safeArgs);
+      const content = Array.isArray(result?.content) ? result.content : [];
+      return { content: [serverDebug, ...content] };
+    }
+
+    case 'encryptVaultFile': {
+      const tool = new EncryptVaultTool();
+      const safeArgs = {
+        projectRoot: path.resolve(process.cwd()),
+        ...(request.params.args ?? request.params),
+      };
+
+      const serverDebug = {
+        type: 'text' as const,
+        text: `[SERVER DEBUG] Invoking encryptVaultFile with safeArgs: ${JSON.stringify(
+          safeArgs
+        )}`,
+      };
+
+      const result = await tool.run(safeArgs);
+      const content = Array.isArray(result?.content) ? result.content : [];
+      return { content: [serverDebug, ...content] };
     }
 
     default:

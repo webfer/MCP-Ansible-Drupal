@@ -14,11 +14,14 @@ export class ValidateDeployTool {
   /**
    * Executes the validation + deployment pipeline.
    */
-  async run(args: Partial<ExecuteDeploymentOptions>) {
+  async run(args: Partial<ExecuteDeploymentOptions> = {}) {
+    if (!args || !args.environment || !args.action) {
+      throw new Error('Missing required parameters: environment and action');
+    }
     try {
       const result = await executeDeployment({
-        environment: args.environment || 'stage',
-        action: args.action || 'update',
+        environment: args.environment,
+        action: args.action,
         withAssets: args.withAssets ?? false,
         projectRoot: args.projectRoot || process.cwd(),
         ansibleVaultPassFile: args.ansibleVaultPassFile,
