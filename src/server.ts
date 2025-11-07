@@ -13,6 +13,7 @@ import {
   CloneRepositoryTool,
   AnsibleSetUpTool,
   AnsibleCleanUpTool,
+  ValidateDeployTool,
 } from './tools/index.js';
 import {
   GetAnsibleDrupalRepoUrl,
@@ -70,6 +71,38 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         'Cleans up the /temporal and /temporal/ansible-drupal directories after setup.',
       inputSchema: { type: 'object', properties: {}, required: [] },
     },
+    {
+      name: 'validateDeploy',
+      description:
+        'Validates configuration and executes the Drupal deployment (stage/live, install/update).',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          environment: {
+            type: 'string',
+            enum: ['stage', 'live'],
+            description: 'Deployment environment',
+          },
+          action: {
+            type: 'string',
+            enum: ['install', 'update'],
+            description: 'Deployment action type',
+          },
+          withAssets: {
+            type: 'boolean',
+            description:
+              'Whether to include asset synchronization during deployment',
+            default: false,
+          },
+          ansibleVaultPassFile: {
+            type: 'string',
+            description:
+              'Optional path to the vault password file used by Ansible.',
+          },
+        },
+        required: ['environment', 'action'],
+      },
+    },
   ],
 }));
 
@@ -126,6 +159,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     case 'ansibleCleanup': {
       const cleanup = new AnsibleCleanUpTool();
       return await cleanup.run();
+    }
+    case 'validateDeploy': {
+      const tool = new ValidateDeployTool();
+      return await tool.run(args as any);
     }
 
     default:

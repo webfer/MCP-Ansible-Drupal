@@ -2,7 +2,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ListToolsRequestSchema, CallToolRequestSchema, ListPromptsRequestSchema, GetPromptRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
-import { CloneRepositoryTool, AnsibleSetUpTool, AnsibleCleanUpTool, } from './tools/index.js';
+import { CloneRepositoryTool, AnsibleSetUpTool, AnsibleCleanUpTool, ValidateDeployTool, } from './tools/index.js';
 import { GetAnsibleDrupalRepoUrl, GetAnsibleSetupPrompt, } from './prompts/index.js';
 const ansibleTool = new AnsibleSetUpTool();
 const cleanupTool = new AnsibleCleanUpTool();
@@ -44,6 +44,35 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             name: 'ansibleCleanup',
             description: 'Cleans up the /temporal and /temporal/ansible-drupal directories after setup.',
             inputSchema: { type: 'object', properties: {}, required: [] },
+        },
+        {
+            name: 'validateDeploy',
+            description: 'Validates configuration and executes the Drupal deployment (stage/live, install/update).',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    environment: {
+                        type: 'string',
+                        enum: ['stage', 'live'],
+                        description: 'Deployment environment',
+                    },
+                    action: {
+                        type: 'string',
+                        enum: ['install', 'update'],
+                        description: 'Deployment action type',
+                    },
+                    withAssets: {
+                        type: 'boolean',
+                        description: 'Whether to include asset synchronization during deployment',
+                        default: false,
+                    },
+                    ansibleVaultPassFile: {
+                        type: 'string',
+                        description: 'Optional path to the vault password file used by Ansible.',
+                    },
+                },
+                required: ['environment', 'action'],
+            },
         },
     ],
 }));
@@ -93,6 +122,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         case 'ansibleCleanup': {
             const cleanup = new AnsibleCleanUpTool();
             return await cleanup.run();
+        }
+        case 'validateDeploy': {
+            const tool = new ValidateDeployTool();
+            return await tool.run(args);
         }
         default:
             throw new Error(`Unknown tool: ${name}`);
