@@ -1,49 +1,69 @@
-import { decryptVaultFile } from './verifyVaultFile.js';
+import { execSync } from 'child_process';
+import { VaultToolBase, VaultToolArgs } from './VaultToolBase.js';
+import { verifyVaultFile } from './verifyVaultFile.js';
 
-export class DecryptVaultTool {
+export class DecryptVaultTool extends VaultToolBase {
   name = 'decryptVaultFile';
   description = 'Decrypts the Ansible Vault file for the selected environment.';
 
-  async run(args?: any) {
-    // 🧠 Normalize all possible argument shapes (from MCP, VSCode, or CLI)
-    const environment =
-      args?.environment ||
-      args?.arguments?.environment ||
-      args?.arguments?.[0]?.environment ||
-      args?.arguments?.[0] ||
-      null;
-
-    const projectRoot =
-      args?.projectRoot ||
-      args?.arguments?.projectRoot ||
-      args?.arguments?.[0]?.projectRoot ||
-      '/';
-
-    console.error('[DEBUG] Resolved args for decryptVaultTool:', {
-      environment,
+  async run(args?: VaultToolArgs) {
+    // Normalize environment and projectRoot
+    const {
+      environment: userEnv,
       projectRoot,
-      rawArgs: args,
-    });
+      rawArgs,
+    } = this.normalizeArgs(args);
 
+    // Start building messages to return to MCP/VSCode
     const messages = [
-      {
-        type: 'text',
-        text: `[DEBUG] decryptVaultTool invoked with environment=${environment}, projectRoot=${projectRoot}`,
-      },
+      this.createDebugMessage(
+        `decryptVaultTool invoked with environment=${userEnv}, projectRoot=${projectRoot}`
+      ),
     ];
 
-    // 🚨 Guard against missing environment
-    if (!environment) {
+    // Guard: Missing environment
+    if (!userEnv) {
       messages.push({
         type: 'text',
-        text: '❌ Missing required environment parameter. Please specify "stage" or "live".',
+        text: '❌ Missing required environment parameter. Please specify "stage" or "production".',
+      });
+      return { content: messages };
+    }
+
+    // Normalize environment for verifyVaultFile
+    let normalizedEnv: 'stage' | 'live';
+
+    if (userEnv === 'stage') {
+      normalizedEnv = 'stage';
+    } else if (userEnv === 'production') {
+      normalizedEnv = 'live';
+    } else {
+      messages.push({
+        type: 'text',
+        text: '❌ Invalid environment. Please specify "stage" or "production".',
       });
       return { content: messages };
     }
 
     try {
-      // 🔓 Perform decryption
-      const vaultPath = decryptVaultFile(projectRoot, environment);
+      const vaultPath = this.resolveVaultPath(projectRoot, userEnv);
+      this.ensureFileExists(vaultPath);
+
+      // Verify vault file (auto-encrypt if needed)
+      const result = verifyVaultFile({
+        projectRoot,
+        environment: normalizedEnv,
+      });
+
+      if (!result.encrypted) {
+        messages.push({
+          type: 'text',
+          text: `⚠️ Vault file not encrypted. Encrypting now: ${vaultPath}`,
+        });
+      }
+
+      execSync(`ansible-vault decrypt ${vaultPath}`, { stdio: 'inherit' });
+
       messages.push({
         type: 'text',
         text: `🔓 Vault file decrypted successfully: ${vaultPath}`,

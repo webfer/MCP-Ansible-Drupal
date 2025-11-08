@@ -1,74 +1,62 @@
 import { execSync } from 'child_process';
-import path from 'path';
-import fs from 'fs';
+import { VaultToolBase, VaultToolArgs } from './VaultToolBase.js';
+import { verifyVaultFile } from './verifyVaultFile.js';
 
-export class EncryptVaultTool {
+export class EncryptVaultTool extends VaultToolBase {
   name = 'encryptVaultFile';
   description = 'Encrypts the Ansible Vault file for the selected environment.';
 
-  async run(args?: any) {
-    // 🧠 Normalize all possible argument shapes (MCP, VSCode, or CLI)
-    const environment =
-      args?.environment ||
-      args?.arguments?.environment ||
-      args?.arguments?.[0]?.environment ||
-      args?.arguments?.[0] ||
-      null;
-
-    const projectRoot =
-      args?.projectRoot ||
-      args?.arguments?.projectRoot ||
-      args?.arguments?.[0]?.projectRoot ||
-      process.cwd();
-
-    console.error('[DEBUG] Resolved args for encryptVaultTool:', {
-      environment,
+  async run(args?: VaultToolArgs) {
+    const {
+      environment: userEnv,
       projectRoot,
-      rawArgs: args,
-    });
+      rawArgs,
+    } = this.normalizeArgs(args);
 
     const messages = [
-      {
-        type: 'text',
-        text: `[DEBUG] encryptVaultTool invoked with environment=${environment}, projectRoot=${projectRoot}`,
-      },
+      this.createDebugMessage(
+        `encryptVaultTool invoked with environment=${userEnv}, projectRoot=${projectRoot}`
+      ),
     ];
 
-    // 🚨 Guard against missing environment
-    if (!environment) {
+    if (!userEnv) {
       messages.push({
         type: 'text',
-        text: '❌ Missing required environment parameter. Please specify "stage" or "live".',
+        text: '❌ Missing required environment parameter. Please specify "stage" or "production".',
       });
       return { content: messages };
     }
 
-    // 🗺️ Construct the vault path
-    const vaultPath = path.resolve(
-      projectRoot,
-      `tools/ansible/inventories/${environment}/group_vars/server.yml`
-    );
-
-    if (!fs.existsSync(vaultPath)) {
+    // Map user input to verifyVaultFile expected type
+    let normalizedEnv: 'stage' | 'live';
+    if (userEnv === 'stage') {
+      normalizedEnv = 'stage';
+    } else if (userEnv === 'production') {
+      normalizedEnv = 'live';
+    } else {
       messages.push({
         type: 'text',
-        text: `❌ Vault file not found at: ${vaultPath}`,
-      });
-      return { content: messages };
-    }
-
-    // 🧩 Check if already encrypted (avoid double encryption)
-    const fileContent = fs.readFileSync(vaultPath, 'utf8');
-    if (fileContent.startsWith('$ANSIBLE_VAULT;')) {
-      messages.push({
-        type: 'text',
-        text: `✅ Vault file is already encrypted: ${vaultPath}`,
+        text: '❌ Invalid environment. Please specify "stage" or "production".',
       });
       return { content: messages };
     }
 
     try {
-      console.error(`[DEBUG] Encrypting vault file at: ${vaultPath}`);
+      const vaultPath = this.resolveVaultPath(projectRoot, userEnv);
+      this.ensureFileExists(vaultPath);
+
+      const result = verifyVaultFile({
+        projectRoot,
+        environment: normalizedEnv,
+      });
+      if (result.encrypted) {
+        messages.push({
+          type: 'text',
+          text: `⚠️ Vault file is already encrypted: ${vaultPath}`,
+        });
+        return { content: messages };
+      }
+
       execSync(`ansible-vault encrypt ${vaultPath}`, { stdio: 'inherit' });
       messages.push({
         type: 'text',
