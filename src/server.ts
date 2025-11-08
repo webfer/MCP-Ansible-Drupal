@@ -25,6 +25,9 @@ import {
   GetAnsibleSetupPrompt,
 } from './prompts/index.js';
 
+import { ExecuteDeploymentOptions } from './types/index.js';
+import { ExecuteDeploymentTool } from './tools/executeDeployment.js';
+
 const ansibleTool = new AnsibleSetUpTool();
 const cleanupTool = new AnsibleCleanUpTool();
 
@@ -137,12 +140,38 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['environment'],
       },
     },
+    {
+      name: 'executeDeployment',
+      description: 'Runs a stage or live deployment using Ansible.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          environment: {
+            type: 'string',
+            enum: ['stage', 'live', 'production'],
+            description: 'Deployment environment.',
+          },
+          action: {
+            type: 'string',
+            enum: ['install', 'update'],
+            description: 'Deployment action (install/update).',
+            default: 'install',
+          },
+          withAssets: {
+            type: 'boolean',
+            description: 'Include asset synchronization during deployment.',
+            default: false,
+          },
+        },
+        required: ['environment'],
+      },
+    },
   ],
 }));
 
 // 🧠 Handle tool execution
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, args } = request.params;
+server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+  const { name, arguments: args } = request.params;
 
   switch (name) {
     case 'cloneRepository': {
@@ -196,8 +225,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     case 'validateDeploy': {
       const tool = new ValidateDeployTool();
-      const safeArgs = (request.params.args ?? request.params) as any;
-      return await tool.run(safeArgs);
+
+      // Extract tool arguments correctly
+      const safeArgs = (
+        request.params.arguments && typeof request.params.arguments === 'object'
+          ? request.params.arguments
+          : {}
+      ) as Record<string, unknown>;
+
+      console.error('[DEBUG] validateDeploy safeArgs:', safeArgs);
+
+      return await tool.run(safeArgs as any);
     }
 
     case 'decryptVaultFile': {
@@ -236,6 +274,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const result = await tool.run(safeArgs);
       const content = Array.isArray(result?.content) ? result.content : [];
       return { content: [serverDebug, ...content] };
+    }
+    case 'executeDeployment': {
+      const tool = new ExecuteDeploymentTool();
+      const safeArgs = (request.params.args ?? {}) as ExecuteDeploymentOptions;
+      return await tool.run(safeArgs);
     }
 
     default:

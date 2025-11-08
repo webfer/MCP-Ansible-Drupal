@@ -5,6 +5,7 @@ import path from 'path';
 import { ListToolsRequestSchema, CallToolRequestSchema, ListPromptsRequestSchema, GetPromptRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
 import { CloneRepositoryTool, AnsibleSetUpTool, AnsibleCleanUpTool, ValidateDeployTool, DecryptVaultTool, EncryptVaultTool, } from './tools/index.js';
 import { GetAnsibleDrupalRepoUrl, GetAnsibleSetupPrompt, } from './prompts/index.js';
+import { ExecuteDeploymentTool } from './tools/executeDeployment.js';
 const ansibleTool = new AnsibleSetUpTool();
 const cleanupTool = new AnsibleCleanUpTool();
 const server = new Server({
@@ -105,11 +106,37 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
                 required: ['environment'],
             },
         },
+        {
+            name: 'executeDeployment',
+            description: 'Runs a stage or live deployment using Ansible.',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    environment: {
+                        type: 'string',
+                        enum: ['stage', 'live', 'production'],
+                        description: 'Deployment environment.',
+                    },
+                    action: {
+                        type: 'string',
+                        enum: ['install', 'update'],
+                        description: 'Deployment action (install/update).',
+                        default: 'install',
+                    },
+                    withAssets: {
+                        type: 'boolean',
+                        description: 'Include asset synchronization during deployment.',
+                        default: false,
+                    },
+                },
+                required: ['environment'],
+            },
+        },
     ],
 }));
 // 🧠 Handle tool execution
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    const { name, args } = request.params;
+server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    const { name, arguments: args } = request.params;
     switch (name) {
         case 'cloneRepository': {
             // Safely normalize arguments to avoid "undefined" errors
@@ -156,7 +183,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         case 'validateDeploy': {
             const tool = new ValidateDeployTool();
-            const safeArgs = (request.params.args ?? request.params);
+            // Extract tool arguments correctly
+            const safeArgs = (request.params.arguments && typeof request.params.arguments === 'object'
+                ? request.params.arguments
+                : {});
+            console.error('[DEBUG] validateDeploy safeArgs:', safeArgs);
             return await tool.run(safeArgs);
         }
         case 'decryptVaultFile': {
@@ -186,6 +217,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             const result = await tool.run(safeArgs);
             const content = Array.isArray(result?.content) ? result.content : [];
             return { content: [serverDebug, ...content] };
+        }
+        case 'executeDeployment': {
+            const tool = new ExecuteDeploymentTool();
+            const safeArgs = (request.params.args ?? {});
+            return await tool.run(safeArgs);
         }
         default:
             throw new Error(`Unknown tool: ${name}`);

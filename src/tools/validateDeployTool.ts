@@ -4,9 +4,8 @@
  * MCP Tool for validating and executing Drupal deployments via Ansible.
  */
 
-import { executeDeployment } from './executeDeployment.js';
-import type { ExecuteDeploymentOptions } from './executeDeployment.js';
-
+import { ExecuteDeployment } from './executeDeployment.js';
+import type { ExecuteDeploymentOptions } from '../types/types.js';
 export class ValidateDeployTool {
   name = 'validateDeploy';
   description = 'Validates and executes the Drupal Ansible deployment process.';
@@ -19,7 +18,7 @@ export class ValidateDeployTool {
       throw new Error('Missing required parameters: environment and action');
     }
     try {
-      const result = await executeDeployment({
+      const result = await ExecuteDeployment({
         environment: args.environment,
         action: args.action,
         withAssets: args.withAssets ?? false,

@@ -3,71 +3,184 @@
  * --------------------
  * Executes the Ansible deployment playbook for the given environment.
  * It uses validated configuration, verified vault file, resolved paths,
- * and generated skip-tags from previous tasks.
+ * generated skip-tags, and streams logs using runAnsible helper.
  */
-import { spawnSync } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 import { resolveProjectPaths } from './resolveProjectPaths.js';
 import { generateSkipTags } from './generateSkipTags.js';
 import { validateDeployConfig } from './validateDeployConfig.js';
 import { verifyVaultFile } from './verifyVaultFile.js';
-export async function executeDeployment(options) {
+import { runAnsible } from '../helper/runAnsible.js';
+/**
+ * Executes an Ansible deployment for the given environment and action.
+ */
+export async function ExecuteDeployment(options) {
+    const messages = [];
     const projectRoot = options.projectRoot || process.cwd();
-    // ✅ Step 1: Validate configuration
-    const validation = validateDeployConfig(options);
+    const action = options.action || 'install';
+    // Step 0: Normalize environment
+    let normalizedEnv;
+    if (options.environment === 'stage') {
+        normalizedEnv = 'stage';
+    }
+    else if (options.environment === 'live' ||
+        options.environment === 'production') {
+        normalizedEnv = 'live';
+    }
+    else {
+        const errMsg = `Invalid environment: "${options.environment}". Expected "stage" or "live".`;
+        messages.push({ type: 'text', text: `❌ ${errMsg}` });
+        const error = new Error(errMsg);
+        error.messages = messages;
+        throw error;
+    }
+    messages.push({
+        type: 'text',
+        text: `✅ Normalized environment: ${options.environment} → ${normalizedEnv}`,
+    });
+    messages.push({ type: 'text', text: `✅ Action: ${action}` });
+    messages.push({ type: 'text', text: `✅ Project root: ${projectRoot}` });
+    // Step 1: Validate configuration
+    const validation = validateDeployConfig({
+        ...options,
+        environment: normalizedEnv,
+        action,
+    });
     if (!validation.valid) {
-        throw new Error(`Invalid deploy configuration: ${validation.errors?.join(', ')}`);
+        const errMsg = `Invalid deploy configuration: ${validation.errors?.join(', ')}`;
+        messages.push({ type: 'text', text: `❌ ${errMsg}` });
+        const error = new Error(errMsg);
+        error.messages = messages;
+        throw error;
     }
-    // ✅ Use the original options directly (since validateDeployConfig only validates)
-    const { environment, action, withAssets } = options;
-    // ✅ Step 2: Resolve paths (inventory, playbook, vault)
-    const paths = resolveProjectPaths({ projectRoot, environment });
+    messages.push({
+        type: 'text',
+        text: '✅ Deployment configuration validated.',
+    });
+    // Step 2: Resolve paths
+    const paths = resolveProjectPaths({
+        projectRoot,
+        environment: normalizedEnv,
+    });
     if (!paths.valid) {
-        throw new Error(`Failed to resolve project paths: ${paths.errors?.join(', ')}`);
+        const errMsg = `Failed to resolve project paths: ${paths.errors?.join(', ')}`;
+        messages.push({ type: 'text', text: `❌ ${errMsg}` });
+        const error = new Error(errMsg);
+        error.messages = messages;
+        throw error;
     }
-    // ✅ Step 3: Verify vault file (use the selected environment and projectRoot)
+    messages.push({
+        type: 'text',
+        text: `✅ Inventory file: ${paths.inventoryFile}`,
+    });
+    messages.push({
+        type: 'text',
+        text: `✅ Playbook file: ${paths.playbookFile}`,
+    });
+    // Step 3: Verify vault file
     const vaultCheck = verifyVaultFile({
         projectRoot,
-        environment,
+        environment: normalizedEnv,
     });
     if (!vaultCheck.valid) {
-        throw new Error(`Vault file invalid: ${vaultCheck.errors?.join(', ')}`);
+        const errMsg = `Vault file invalid: ${vaultCheck.errors?.join(', ')}`;
+        messages.push({ type: 'text', text: `❌ ${errMsg}` });
+        const error = new Error(errMsg);
+        error.messages = messages;
+        throw error;
     }
-    // ✅ Step 4: Generate skip-tags
-    const skipTagsData = generateSkipTags({ environment, action, withAssets });
+    messages.push({ type: 'text', text: '✅ Vault file verified.' });
+    // Step 4: Generate skip-tags
+    const skipTagsData = generateSkipTags({
+        environment: normalizedEnv,
+        action,
+        withAssets: options.withAssets,
+    });
     if (!skipTagsData.valid) {
-        throw new Error(`Failed to generate skip-tags: ${skipTagsData.description}`);
+        const errMsg = `Failed to generate skip-tags: ${skipTagsData.description}`;
+        messages.push({ type: 'text', text: `❌ ${errMsg}` });
+        const error = new Error(errMsg);
+        error.messages = messages;
+        throw error;
     }
-    // ✅ Step 5: Construct ansible-playbook command
+    messages.push({
+        type: 'text',
+        text: `✅ Skip-tags generated: ${skipTagsData.skipTags.join(', ')}`,
+    });
+    messages.push({
+        type: 'text',
+        text: `⚠️ Deploying with assets: ${options.withAssets ? 'YES' : 'NO'}`,
+    });
+    // Step 5: Resolve vault password file
+    const vaultPassPath = options.ansibleVaultPassFile || path.join(projectRoot, 'vault_pass.txt');
+    messages.push({
+        type: 'text',
+        text: `⚠️ Using vault password file: ${vaultPassPath}`,
+    });
+    if (!fs.existsSync(vaultPassPath)) {
+        const errMsg = `Vault password file not found at path: ${vaultPassPath}`;
+        messages.push({ type: 'text', text: `❌ ${errMsg}` });
+        const error = new Error(errMsg);
+        error.messages = messages;
+        throw error;
+    }
+    // Step 6: Construct Ansible command
     const ansibleCmd = [
         'ansible-playbook',
         '-i',
         paths.inventoryFile,
         paths.playbookFile,
         '--vault-password-file',
-        options.ansibleVaultPassFile || '/home/ansible/.vault_pass.txt',
+        vaultPassPath,
         '--skip-tags',
         skipTagsData.skipTags.join(','),
     ];
-    // Add extra vars if provided
     if (options.extraVars && Object.keys(options.extraVars).length > 0) {
         for (const [key, value] of Object.entries(options.extraVars)) {
             ansibleCmd.push('--extra-vars', `${key}=${value}`);
         }
     }
-    // ✅ Step 6: Execute the command
-    console.log(`\n🚀 Executing deployment: ${skipTagsData.description}`);
-    console.log(`> ${ansibleCmd.join(' ')}\n`);
-    const result = spawnSync(ansibleCmd[0], ansibleCmd.slice(1), {
-        cwd: projectRoot,
-        stdio: 'pipe',
-        encoding: 'utf-8',
+    messages.push({
+        type: 'text',
+        text: `[DEBUG] Full command: ${ansibleCmd.join(' ')}`,
     });
-    const success = result.status === 0;
+    messages.push({
+        type: 'text',
+        text: `🚀 Executing deployment: ${skipTagsData.description}`,
+    });
+    // Step 7: Execute deployment with streaming logs
+    const ansibleResult = await runAnsible(ansibleCmd, projectRoot, (line) => {
+        // Display each log line live in the MCP chat pane
+        messages.push({ type: 'text', text: line });
+        console.error(`${normalizedEnv} ${line}`);
+    });
+    // Return MCP-compatible result
     return {
-        success,
+        success: ansibleResult.success,
         command: ansibleCmd.join(' '),
-        output: result.stdout,
-        errorOutput: result.stderr,
-        exitCode: result.status ?? 1,
+        output: ansibleResult.stdout || '',
+        errorOutput: ansibleResult.stderr || '',
+        exitCode: ansibleResult.exitCode,
+        messages,
     };
+}
+// Tool wrapper for MCP
+export class ExecuteDeploymentTool {
+    name = 'executeDeployment';
+    description = 'Executes the initial or update Ansible deployment for the given environment.';
+    async run(options) {
+        const result = await ExecuteDeployment(options);
+        const combined = [
+            {
+                type: 'text',
+                text: result.success
+                    ? '✅ Deployment executed successfully.'
+                    : '❌ Deployment failed.',
+            },
+            { type: 'text', text: `Command: ${result.command}` },
+            ...(result.messages ?? []).map((m) => ({ type: 'text', text: m.text })),
+        ];
+        return { content: combined };
+    }
 }
