@@ -12,7 +12,8 @@ export async function runAnsible(
   ansibleCmd: string[],
   cwd: string,
   onLine?: (line: string) => void,
-  environment?: string
+  environment?: string,
+  env?: NodeJS.ProcessEnv
 ): Promise<RunAnsibleResult> {
   const envLabel = environment?.toUpperCase() || '';
   const messages: { type: 'text'; text: string }[] = [];

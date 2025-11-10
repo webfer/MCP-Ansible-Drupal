@@ -18,6 +18,7 @@ import {
   ValidateDeployTool,
   DecryptVaultTool,
   EncryptVaultTool,
+  GetDeploymentLogsTool,
 } from './tools/index.js';
 import {
   GetAnsibleDrupalRepoUrl,
@@ -25,8 +26,6 @@ import {
   GetAnsibleSetupPrompt,
 } from './prompts/index.js';
 
-// import { ExecuteDeploymentOptions } from './types/index.js';
-// import { ExecuteDeploymentTool } from './tools/executeDeployment.js';
 import { handleFirstDeploymentConfirmation } from './helpers/index.js';
 
 const ansibleTool = new AnsibleSetUpTool();
@@ -167,6 +166,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         required: ['environment'],
       },
     },
+    {
+      name: 'getDeploymentLogs',
+      description:
+        'Returns the most recent Ansible deployment log or a portion of it.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          lines: {
+            type: 'number',
+            description:
+              'Number of lines from the end of the log file to return (default: 50)',
+          },
+        },
+        required: [],
+      },
+    },
   ],
 }));
 
@@ -252,14 +267,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
         rawArgs
       );
 
-      console.error(
-        JSON.stringify({
-          type: 'info',
-          message: `✅ First deployment confirmation flow returned: ${JSON.stringify(
-            confirmationResult.content
-          )}`,
-        })
-      );
+      // console.error(
+      //   JSON.stringify({
+      //     type: 'info',
+      //     message: `✅ First deployment confirmation flow returned: ${JSON.stringify(
+      //       confirmationResult.content
+      //     )}`,
+      //   })
+      // );
 
       return confirmationResult;
     }
@@ -305,7 +320,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       const rawArgs = (request.params.args ?? {}) as Record<string, any>;
       return await handleFirstDeploymentConfirmation(rawArgs);
     }
-
+    case 'getDeploymentLogs': {
+      return await GetDeploymentLogsTool.run(request.params.arguments ?? {});
+    }
     default:
       throw new Error(`Unknown tool: ${name}`);
   }

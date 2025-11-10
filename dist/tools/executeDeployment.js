@@ -2,8 +2,8 @@
  * executeDeployment.ts
  * --------------------
  * Executes the Ansible deployment playbook for the given environment.
- * It uses validated configuration, verified vault file, resolved paths,
- * generated skip-tags, and streams logs using runAnsible helper.
+ * Streams logs to MCP chat and saves logs to tools/tmp/logs.
+ * Keeps only the last 3 deployment logs.
  */
 import path from 'path';
 import fs from 'fs';
@@ -125,7 +125,7 @@ export async function ExecuteDeployment(options) {
         error.messages = messages;
         throw error;
     }
-    // Step 6: Construct Ansible command
+    // Step 6: Prepare Ansible command
     const ansibleCmd = [
         'ansible-playbook',
         '-i',
@@ -141,6 +141,16 @@ export async function ExecuteDeployment(options) {
             ansibleCmd.push('--extra-vars', `${key}=${value}`);
         }
     }
+    // Step 6a: Prepare log file in tools/tmp/logs
+    const logDir = path.resolve(projectRoot, 'tools/tmp/logs');
+    if (!fs.existsSync(logDir))
+        fs.mkdirSync(logDir, { recursive: true });
+    const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15);
+    const logFile = path.join(logDir, `ansible-${timestamp}.log`);
+    messages.push({
+        type: 'text',
+        text: `📁 Deployment logs will be saved to: ${logFile}`,
+    });
     messages.push({
         type: 'text',
         text: `[DEBUG] Full command: ${ansibleCmd.join(' ')}`,
@@ -149,12 +159,28 @@ export async function ExecuteDeployment(options) {
         type: 'text',
         text: `🚀 Executing deployment: ${skipTagsData.description}`,
     });
-    // Step 7: Execute deployment with streaming logs
+    // Step 7: Execute deployment with live streaming
+    process.env.ANSIBLE_LOG_PATH = logFile;
     const ansibleResult = await runAnsible(ansibleCmd, projectRoot, (line) => {
-        // Display each log line live in the MCP chat pane
         messages.push({ type: 'text', text: line });
         console.error(`${normalizedEnv} ${line}`);
     });
+    // Step 8: Rotate logs (keep only last 3)
+    const files = fs
+        .readdirSync(logDir)
+        .filter((f) => f.startsWith('ansible') && f.endsWith('.log'))
+        .sort((a, b) => fs.statSync(path.join(logDir, b)).mtimeMs -
+        fs.statSync(path.join(logDir, a)).mtimeMs);
+    if (files.length > 3) {
+        const oldFiles = files.slice(3);
+        for (const old of oldFiles) {
+            fs.unlinkSync(path.join(logDir, old));
+            console.error(JSON.stringify({
+                type: 'info',
+                message: `🧹 Removed old log file: ${old}`,
+            }));
+        }
+    }
     // Return MCP-compatible result
     return {
         success: ansibleResult.success,

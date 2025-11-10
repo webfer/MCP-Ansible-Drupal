@@ -138,7 +138,10 @@ export async function handleFirstDeploymentConfirmation(args) {
         pendingFirstDeployment = {
             awaitingType: true,
             awaitingConfirmation: false,
-            args: safeArgs,
+            args: {
+                ...safeArgs,
+                environment: safeArgs.environment || 'stage',
+            },
         };
         setPendingTimeout();
         console.log(JSON.stringify({
@@ -159,7 +162,10 @@ export async function handleFirstDeploymentConfirmation(args) {
         pendingFirstDeployment = {
             awaitingType: false,
             awaitingConfirmation: true,
-            args: safeArgs,
+            args: {
+                ...safeArgs,
+                environment: safeArgs.environment || 'stage',
+            },
         };
         setPendingTimeout();
         console.log(JSON.stringify({

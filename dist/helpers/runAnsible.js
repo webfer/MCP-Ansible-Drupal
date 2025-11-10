@@ -6,7 +6,7 @@ import { spawn } from 'child_process';
  * @param cwd Current working directory for the command
  * @param onLine Optional callback for each output line
  */
-export async function runAnsible(ansibleCmd, cwd, onLine, environment) {
+export async function runAnsible(ansibleCmd, cwd, onLine, environment, env) {
     const envLabel = environment?.toUpperCase() || '';
     const messages = [];
     let stdout = '';

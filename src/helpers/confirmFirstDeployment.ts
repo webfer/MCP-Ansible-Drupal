@@ -199,7 +199,10 @@ export async function handleFirstDeploymentConfirmation(
     pendingFirstDeployment = {
       awaitingType: true,
       awaitingConfirmation: false,
-      args: safeArgs,
+      args: {
+        ...safeArgs,
+        environment: safeArgs.environment || 'stage',
+      },
     };
     setPendingTimeout();
 
@@ -225,7 +228,10 @@ export async function handleFirstDeploymentConfirmation(
     pendingFirstDeployment = {
       awaitingType: false,
       awaitingConfirmation: true,
-      args: safeArgs,
+      args: {
+        ...safeArgs,
+        environment: safeArgs.environment || 'stage',
+      },
     };
     setPendingTimeout();
 
