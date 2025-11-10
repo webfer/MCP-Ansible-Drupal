@@ -3,8 +3,11 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import path from 'path';
 import { ListToolsRequestSchema, CallToolRequestSchema, ListPromptsRequestSchema, GetPromptRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
-import { CloneRepositoryTool, AnsibleSetUpTool, AnsibleCleanUpTool, ValidateDeployTool, DecryptVaultTool, EncryptVaultTool, } from './tools/index.js';
+import { CloneRepositoryTool, AnsibleSetUpTool, AnsibleCleanUpTool, DecryptVaultTool, EncryptVaultTool, } from './tools/index.js';
 import { GetAnsibleDrupalRepoUrl, GetAnsibleSetupPrompt, } from './prompts/index.js';
+// import { ExecuteDeploymentOptions } from './types/index.js';
+// import { ExecuteDeploymentTool } from './tools/executeDeployment.js';
+import { handleFirstDeploymentConfirmation } from './helpers/index.js';
 const ansibleTool = new AnsibleSetUpTool();
 const cleanupTool = new AnsibleCleanUpTool();
 const server = new Server({
@@ -181,13 +184,24 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
             return await cleanup.run();
         }
         case 'validateDeploy': {
-            const tool = new ValidateDeployTool();
-            // Extract tool arguments correctly
-            const safeArgs = (request.params.arguments && typeof request.params.arguments === 'object'
+            const rawArgs = (request.params.arguments && typeof request.params.arguments === 'object'
                 ? request.params.arguments
                 : {});
-            console.error('[DEBUG] validateDeploy safeArgs:', safeArgs);
-            return await tool.run(safeArgs);
+            // Map user's chat input to confirmAnswer if present
+            if (typeof rawArgs.text === 'string' ||
+                typeof rawArgs.response === 'string') {
+                rawArgs.confirmAnswer = rawArgs.text ?? rawArgs.response;
+            }
+            console.error(JSON.stringify({
+                type: 'info',
+                message: `✅ validateDeploy called with args: ${JSON.stringify(rawArgs)}`,
+            }));
+            const confirmationResult = await handleFirstDeploymentConfirmation(rawArgs);
+            console.error(JSON.stringify({
+                type: 'info',
+                message: `✅ First deployment confirmation flow returned: ${JSON.stringify(confirmationResult.content)}`,
+            }));
+            return confirmationResult;
         }
         case 'decryptVaultFile': {
             const tool = new DecryptVaultTool();
@@ -217,10 +231,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
             const content = Array.isArray(result?.content) ? result.content : [];
             return { content: [serverDebug, ...content] };
         }
-        // case 'executeDeployment': {
-        //   const rawArgs = (request.params.args ?? {}) as Record<string, any>;
-        //   return await handleFirstDeploymentConfirmation(rawArgs);
-        // }
+        case 'executeDeployment': {
+            const rawArgs = (request.params.args ?? {});
+            return await handleFirstDeploymentConfirmation(rawArgs);
+        }
         default:
             throw new Error(`Unknown tool: ${name}`);
     }
