@@ -163,4 +163,5 @@ composer.json
 web
 ansible.cfg
 tools
+config
 !src/tools

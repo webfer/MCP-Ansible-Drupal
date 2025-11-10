@@ -11,7 +11,7 @@ import { resolveProjectPaths } from './resolveProjectPaths.js';
 import { generateSkipTags } from './generateSkipTags.js';
 import { validateDeployConfig } from './validateDeployConfig.js';
 import { verifyVaultFile } from './verifyVaultFile.js';
-import { runAnsible } from '../helper/runAnsible.js';
+import { runAnsible } from '../helpers/index.js';
 /**
  * Executes an Ansible deployment for the given environment and action.
  */

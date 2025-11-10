@@ -27,6 +27,7 @@ import {
 
 import { ExecuteDeploymentOptions } from './types/index.js';
 import { ExecuteDeploymentTool } from './tools/executeDeployment.js';
+import { handleFirstDeploymentConfirmation } from './helpers/index.js';
 
 const ansibleTool = new AnsibleSetUpTool();
 const cleanupTool = new AnsibleCleanUpTool();
@@ -276,9 +277,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       return { content: [serverDebug, ...content] };
     }
     case 'executeDeployment': {
-      const tool = new ExecuteDeploymentTool();
-      const safeArgs = (request.params.args ?? {}) as ExecuteDeploymentOptions;
-      return await tool.run(safeArgs);
+      const rawArgs = (request.params.args ?? {}) as Record<string, any>;
+      return await handleFirstDeploymentConfirmation(rawArgs);
     }
 
     default:

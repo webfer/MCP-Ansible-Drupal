@@ -5,7 +5,6 @@ import path from 'path';
 import { ListToolsRequestSchema, CallToolRequestSchema, ListPromptsRequestSchema, GetPromptRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
 import { CloneRepositoryTool, AnsibleSetUpTool, AnsibleCleanUpTool, ValidateDeployTool, DecryptVaultTool, EncryptVaultTool, } from './tools/index.js';
 import { GetAnsibleDrupalRepoUrl, GetAnsibleSetupPrompt, } from './prompts/index.js';
-import { ExecuteDeploymentTool } from './tools/executeDeployment.js';
 const ansibleTool = new AnsibleSetUpTool();
 const cleanupTool = new AnsibleCleanUpTool();
 const server = new Server({
@@ -218,11 +217,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
             const content = Array.isArray(result?.content) ? result.content : [];
             return { content: [serverDebug, ...content] };
         }
-        case 'executeDeployment': {
-            const tool = new ExecuteDeploymentTool();
-            const safeArgs = (request.params.args ?? {});
-            return await tool.run(safeArgs);
-        }
+        // case 'executeDeployment': {
+        //   const rawArgs = (request.params.args ?? {}) as Record<string, any>;
+        //   return await handleFirstDeploymentConfirmation(rawArgs);
+        // }
         default:
             throw new Error(`Unknown tool: ${name}`);
     }
