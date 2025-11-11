@@ -153,3 +153,15 @@ node_modules
 
 # Ignore webpack generated files
 # web/themes/custom/drupy/assets
+
+
+
+
+# Custom ignore rules
+composer.lock
+composer.json
+web
+ansible.cfg
+tools
+config
+!src/tools

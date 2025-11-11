@@ -2,6 +2,8 @@
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import path from 'path';
+
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
@@ -13,12 +15,18 @@ import {
   CloneRepositoryTool,
   AnsibleSetUpTool,
   AnsibleCleanUpTool,
+  ValidateDeployTool,
+  DecryptVaultTool,
+  EncryptVaultTool,
+  GetDeploymentLogsTool,
 } from './tools/index.js';
 import {
   GetAnsibleDrupalRepoUrl,
   RepositoryUrlArguments,
   GetAnsibleSetupPrompt,
 } from './prompts/index.js';
+
+import { handleFirstDeploymentConfirmation } from './helpers/index.js';
 
 const ansibleTool = new AnsibleSetUpTool();
 const cleanupTool = new AnsibleCleanUpTool();
@@ -70,12 +78,116 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         'Cleans up the /temporal and /temporal/ansible-drupal directories after setup.',
       inputSchema: { type: 'object', properties: {}, required: [] },
     },
+    {
+      name: 'validateDeploy',
+      description:
+        'Validates configuration and executes the Drupal deployment (stage/live, install/update).',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          environment: {
+            type: 'string',
+            enum: ['stage', 'live'],
+            description: 'Deployment environment',
+          },
+          action: {
+            type: 'string',
+            enum: ['install', 'update'],
+            description: 'Deployment action type',
+          },
+          withAssets: {
+            type: 'boolean',
+            description:
+              'Whether to include asset synchronization during deployment',
+            default: false,
+          },
+          ansibleVaultPassFile: {
+            type: 'string',
+            description:
+              'Optional path to the vault password file used by Ansible.',
+          },
+        },
+        required: ['environment', 'action'],
+      },
+    },
+    {
+      name: 'decryptVaultFile',
+      description: 'Decrypts the Ansible Vault file for a given environment.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          environment: {
+            type: 'string',
+            enum: ['stage', 'live'],
+            description: 'Deployment environment for the vault file.',
+          },
+        },
+        required: ['environment'],
+      },
+    },
+    {
+      name: 'encryptVaultFile',
+      description: 'Encrypts the Ansible Vault file for a given environment.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          environment: {
+            type: 'string',
+            enum: ['stage', 'live'],
+            description: 'The environment whose vault file will be encrypted.',
+          },
+        },
+        required: ['environment'],
+      },
+    },
+    {
+      name: 'executeDeployment',
+      description: 'Runs a stage or live deployment using Ansible.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          environment: {
+            type: 'string',
+            enum: ['stage', 'live', 'production'],
+            description: 'Deployment environment.',
+          },
+          action: {
+            type: 'string',
+            enum: ['install', 'update'],
+            description: 'Deployment action (install/update).',
+            default: 'install',
+          },
+          withAssets: {
+            type: 'boolean',
+            description: 'Include asset synchronization during deployment.',
+            default: false,
+          },
+        },
+        required: ['environment'],
+      },
+    },
+    {
+      name: 'getDeploymentLogs',
+      description:
+        'Returns the most recent Ansible deployment log or a portion of it.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          lines: {
+            type: 'number',
+            description:
+              'Number of lines from the end of the log file to return (default: 50)',
+          },
+        },
+        required: [],
+      },
+    },
   ],
 }));
 
 // 🧠 Handle tool execution
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, args } = request.params;
+server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+  const { name, arguments: args } = request.params;
 
   switch (name) {
     case 'cloneRepository': {
@@ -127,7 +239,90 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const cleanup = new AnsibleCleanUpTool();
       return await cleanup.run();
     }
+    case 'validateDeploy': {
+      const rawArgs = (
+        request.params.arguments && typeof request.params.arguments === 'object'
+          ? request.params.arguments
+          : {}
+      ) as Record<string, any>;
 
+      // Map user's chat input to confirmAnswer if present
+      if (
+        typeof rawArgs.text === 'string' ||
+        typeof rawArgs.response === 'string'
+      ) {
+        rawArgs.confirmAnswer = rawArgs.text ?? rawArgs.response;
+      }
+
+      console.error(
+        JSON.stringify({
+          type: 'info',
+          message: `✅ validateDeploy called with args: ${JSON.stringify(
+            rawArgs
+          )}`,
+        })
+      );
+
+      const confirmationResult = await handleFirstDeploymentConfirmation(
+        rawArgs
+      );
+
+      // console.error(
+      //   JSON.stringify({
+      //     type: 'info',
+      //     message: `✅ First deployment confirmation flow returned: ${JSON.stringify(
+      //       confirmationResult.content
+      //     )}`,
+      //   })
+      // );
+
+      return confirmationResult;
+    }
+
+    case 'decryptVaultFile': {
+      const tool = new DecryptVaultTool();
+      const safeArgs = {
+        projectRoot: path.resolve(process.cwd()),
+        ...(request.params.args ?? request.params),
+      };
+
+      const serverDebug = {
+        type: 'text' as const,
+        text: `[SERVER DEBUG] Invoking decryptVaultFile with safeArgs: ${JSON.stringify(
+          safeArgs
+        )}`,
+      };
+
+      const result = await tool.run(safeArgs);
+      const content = Array.isArray(result?.content) ? result.content : [];
+      return { content: [serverDebug, ...content] };
+    }
+
+    case 'encryptVaultFile': {
+      const tool = new EncryptVaultTool();
+      const safeArgs = {
+        projectRoot: path.resolve(process.cwd()),
+        ...(request.params.args ?? request.params),
+      };
+
+      const serverDebug = {
+        type: 'text' as const,
+        text: `[SERVER DEBUG] Invoking encryptVaultFile with safeArgs: ${JSON.stringify(
+          safeArgs
+        )}`,
+      };
+
+      const result = await tool.run(safeArgs);
+      const content = Array.isArray(result?.content) ? result.content : [];
+      return { content: [serverDebug, ...content] };
+    }
+    case 'executeDeployment': {
+      const rawArgs = (request.params.args ?? {}) as Record<string, any>;
+      return await handleFirstDeploymentConfirmation(rawArgs);
+    }
+    case 'getDeploymentLogs': {
+      return await GetDeploymentLogsTool.run(request.params.arguments ?? {});
+    }
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
