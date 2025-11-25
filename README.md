@@ -15,13 +15,13 @@
 
 - [✨ Features](#-features)
 - [🎯 What is MCP?](#-what-is-mcp)
-- [🏗️ Architecture](#️-architecture)
+- [✅ Requirements](#-requirements)
 - [📦 Installation](#-installation)
 - [🔧 Configuration](#-configuration)
 - [🎮 Available Tools](#-available-tools)
 - [📚 Usage Examples](#-usage-examples)
 - [🔐 Security](#-security)
-- [🛠️ Development](#️-development)
+- [🙋 Support](#-support)
 - [📄 License](#-license)
 
 ---
@@ -74,118 +74,61 @@ This project implements an MCP server specifically designed for Drupal/Ansible w
 
 ---
 
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     AI Assistant (Claude)                    │
-│                  Natural Language Interface                  │
-└────────────────────────┬────────────────────────────────────┘
-                         │ MCP Protocol
-┌────────────────────────▼────────────────────────────────────┐
-│               MCP-Ansible-Drupal Server                      │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  Tools Layer                                          │   │
-│  │  • cloneRepository    • validateDeploy               │   │
-│  │  • ansibleSetup       • executeDeployment            │   │
-│  │  • decryptVaultFile   • encryptVaultFile             │   │
-│  │  • getDeploymentLogs  • ansibleCleanup               │   │
-│  └──────────────────────────────────────────────────────┘   │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  Helpers Layer                                        │   │
-│  │  • confirmFirstDeployment  • runAnsible               │   │
-│  │  • generateSkipTags        • resolveProjectPaths      │   │
-│  └──────────────────────────────────────────────────────┘   │
-└────────────────────────┬────────────────────────────────────┘
-                         │ Shell Commands
-┌────────────────────────▼────────────────────────────────────┐
-│                    Ansible Playbooks                         │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  • stage-deploy.yml   • live-deploy.yml               │   │
-│  │  • rollback.yml       • Ansistrano tasks              │   │
-│  └──────────────────────────────────────────────────────┘   │
-└────────────────────────┬────────────────────────────────────┘
-                         │ SSH/rsync
-┌────────────────────────▼────────────────────────────────────┐
-│                 Drupal Application Server                    │
-│              (Staging / Production Environment)              │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Key Components
-
-#### **1. Server Layer** (`src/server.ts`)
-
-- MCP protocol handler
-- Tool registration and routing
-- Request/response management
-- Interactive confirmation flows
-
-#### **2. Tools Layer** (`src/tools/`)
-
-- **Deployment Tools**: `executeDeployment.ts`, `validateDeployTool.ts`
-- **Vault Tools**: `decryptVaultTool.ts`, `encryptVaultTool.ts`
-- **Setup Tools**: `cloneRepositoryTool.ts`, `ansibleSetupTool.ts`
-- **Utility Tools**: `getDeploymentLogs.ts`, `generateSkipTags.ts`
-
-#### **3. Helpers Layer** (`src/helpers/`)
-
-- Deployment confirmation workflows
-- Ansible command execution
-- Path resolution and validation
-
-#### **4. Ansible Integration**
-
-- **Playbooks**: Located in `ansible/core/` directory
-- **Inventories**: Environment-specific configurations in `ansible/core/inventories/`
-- **Vault Files**: Encrypted credentials per environment
-
----
-
-## 📦 Installation
-
-### Prerequisites
+## ✅ Requirements
 
 - **Node.js** 18+
 - **TypeScript** 5.2+
 - **Ansible** 2.x
 - **Git**
 
-### Quick Start
+---
 
-> ⭐ **Recommended**: Install via NPM from [npmjs.com/package/@webfer/mcp-ansible-drupal](https://www.npmjs.com/package/@webfer/mcp-ansible-drupal) for the best experience and automatic updates.
+## 📦 Installation
+
+### Using NPM (Recommended)
 
 ```bash
-# 1. Install the package (RECOMMENDED)
 npm install @webfer/mcp-ansible-drupal
-
-# 2. Alternative: Build from source (for development only)
-git clone https://github.com/webfer/MCP-Ansible-Drupal.git
-cd MCP-Ansible-Drupal
-npm install
-npm run build
-
-# 3. Configure your MCP client
-# Add to your MCP settings (e.g., Claude Desktop config):
 ```
 
-**Claude Desktop Configuration** (`claude_desktop_config.json`):
+### Using Yarn
 
-```json
-{
-  "mcpServers": {
-    "mcp-ansible-drupal": {
-      "command": "node",
-      "args": ["/path/to/MCP-Ansible-Drupal/dist/server.js"],
-      "cwd": "/path/to/your/drupal-project"
-    }
-  }
-}
+```bash
+yarn add @webfer/mcp-ansible-drupal
 ```
 
 ---
 
 ## 🔧 Configuration
+
+### MCP Client Setup
+
+Add the following configuration to your MCP settings file (`.vscode/mcp.json` or `mcp.json` in your project root):
+
+```json
+{
+  "servers": {
+    "ansible-drupal": {
+      "command": "npx",
+      "args": ["-y", "@webfer/mcp-ansible-drupal"],
+      "description": "MCP Ansible-Drupal Server"
+    }
+  }
+}
+```
+
+**For Claude Desktop**, add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "mcp-ansible-drupal": {
+      "command": "npx",
+      "args": ["-y", "@webfer/mcp-ansible-drupal"]
+    }
+  }
+}
+```
 
 ### Project Structure Requirements
 
@@ -221,15 +164,6 @@ chmod 600 vault_pass.txt
 ```
 
 **⚠️ Important**: Add to `.gitignore`!
-
-### Ansible Vault Files
-
-Encrypt sensitive data:
-
-```bash
-ansible-vault encrypt ansible/core/inventories/stage/group_vars/server.yml \
-  --vault-password-file vault_pass.txt
-```
 
 ---
 
@@ -322,16 +256,6 @@ Run initial deployment to staging environment.
 Execute update deployment to production with assets included.
 ```
 
-**Install Flow:**
-
-```
-User: "Deploy fresh install to stage"
-MCP:  "⚠️ This will overwrite existing code. Continue? (yes/no)"
-User: "yes"
-MCP:  "✅ Proceeding with deployment..."
-      [Live deployment logs stream here]
-```
-
 ---
 
 ### 3️⃣ **Vault Management**
@@ -389,6 +313,16 @@ Show me the last 100 lines of the deployment logs.
 ## 📚 Usage Examples
 
 ### Complete Workflow Example
+
+**Prompt example (to work properly):**
+
+```
+Clone the DrupAnsible repository into the /temporal directory using the cloneRepository tool.
+After cloning, run the ansibleSetup tool to move the Ansible configuration files and tools to the project root.
+Then run the ansibleCleanup tool to completely remove the /temporal directory, even if it contains other files or folders.
+```
+
+### Step-by-Step Deployment Flow
 
 ```
 User: "Set up a new Drupal deployment environment"
@@ -471,115 +405,11 @@ MCP: "✅ Executing update deployment..."
 
 ---
 
-## 🛠️ Development
+## 🙋 Support
 
-### Project Structure
-
-```
-MCP-Ansible-Drupal/
-├── src/
-│   ├── server.ts              # MCP server entry point
-│   ├── tools/                 # MCP tool implementations
-│   │   ├── executeDeployment.ts
-│   │   ├── validateDeployTool.ts
-│   │   ├── decryptVaultTool.ts
-│   │   ├── encryptVaultTool.ts
-│   │   └── ...
-│   ├── helpers/               # Utility functions
-│   │   ├── confirmFirstDeployment.ts
-│   │   ├── runAnsible.ts
-│   │   └── ...
-│   ├── prompts/               # User interaction prompts
-│   └── types/                 # TypeScript type definitions
-├── ansible/                   # Ansible playbooks & config
-│   └── core/
-│       ├── stage-deploy.yml
-│       ├── live-deploy.yml
-│       ├── inventories/
-│       └── tasks/
-├── dist/                      # Compiled JavaScript
-├── package.json
-├── tsconfig.json
-└── README.md
-```
-
-### Building
-
-```bash
-# Compile TypeScript
-npm run build
-
-# Watch mode for development
-npm run watch
-
-# Run the server
-npm start
-```
-
-### Adding New Tools
-
-1. Create tool file in `src/tools/`:
-
-```typescript
-export class MyCustomTool {
-  name = 'myCustomTool';
-  description = 'Does something useful';
-
-  async run(args: any) {
-    // Tool implementation
-    return { content: [{ type: 'text', text: 'Result' }] };
-  }
-}
-```
-
-2. Register in `src/server.ts`:
-
-```typescript
-import { MyCustomTool } from './tools/myCustomTool.js';
-
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [
-    {
-      name: 'myCustomTool',
-      description: 'Does something useful',
-      inputSchema: {
-        /* JSON Schema */
-      },
-    },
-  ],
-}));
-```
-
-### Testing
-
-```bash
-# Run tests (when available)
-npm test
-
-# Manual testing with Claude Desktop
-# Check logs in:
-# - macOS: ~/Library/Logs/Claude/mcp*.log
-# - Windows: %APPDATA%\Claude\logs\mcp*.log
-```
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Code Standards
-
-- Follow existing TypeScript conventions
-- Add JSDoc comments for public APIs
-- Include error handling
-- Update README for new features
+- 🐛 **Issues**: [GitHub Issues](https://github.com/webfer/MCP-Ansible-Drupal/issues)
+- 💡 **Discussions**: [GitHub Discussions](https://github.com/webfer/MCP-Ansible-Drupal/discussions)
+- 📧 **Contact**: [LinkedIn](https://www.linkedin.com/in/webfer/)
 
 ---
 
@@ -599,14 +429,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 - 🌐 [Drupal](https://www.drupal.org)
 - 🔧 [Ansible](https://www.ansible.com)
 - 🚀 [Ansistrano](https://ansistrano.com)
-
----
-
-## 💬 Support
-
-- 🐛 **Issues**: [GitHub Issues](https://github.com/webfer/MCP-Ansible-Drupal/issues)
-- 💡 **Discussions**: [GitHub Discussions](https://github.com/webfer/MCP-Ansible-Drupal/discussions)
-- 📧 **Contact**: [LinkedIn](https://www.linkedin.com/in/webfer/)
+- 🎯 [DrupAnsible Project](https://github.com/webfer/drupansible)
 
 ---
 
