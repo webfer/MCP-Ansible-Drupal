@@ -2,7 +2,7 @@
  * executeDeployment.ts
  * --------------------
  * Executes the Ansible deployment playbook for the given environment.
- * Streams logs to MCP chat and saves logs to tools/tmp/logs.
+ * Streams logs to MCP chat and saves logs to ansible/tmp/logs.
  * Keeps only the last 3 deployment logs.
  */
 
@@ -164,8 +164,8 @@ export async function ExecuteDeployment(
     }
   }
 
-  // Step 6a: Prepare log file in tools/tmp/logs
-  const logDir = path.resolve(projectRoot, 'tools/tmp/logs');
+  // Step 6a: Prepare log file in ansible/tmp/logs
+  const logDir = path.resolve(projectRoot, 'ansible/tmp/logs');
   if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
   const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15);
   const logFile = path.join(logDir, `ansible-${timestamp}.log`);

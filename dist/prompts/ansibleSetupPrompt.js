@@ -4,7 +4,7 @@
  */
 export async function GetAnsibleSetupPrompt() {
     const basePrompt = `This tool will move the Ansible configuration files
-(tools, ansible.cfg, vault_pass.txt) from /temporal/ansible-drupal to the project root.
+(tools, ansible.cfg, vault_pass.txt) from /temporal/drupansible to the project root.
 
 If the files already exist, the tool will ask you to confirm before overwriting them.
 To proceed, call the "ansibleSetup" tool.`;

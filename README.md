@@ -7,7 +7,7 @@
 
 ## 📦 Features
 
-- Clones the official Ansible-Drupal repository for project bootstrapping.
+- Clones the official DrupAnsible repository for project bootstrapping.
 - Moves and configures essential Ansible files (e.g., `ansible.cfg`, `vault_pass.txt`) into the project root.
 - Cleans up temporary files and directories after setup to keep the workspace tidy.
 - Provides modular tools and prompts for each step (clone, setup, cleanup).
@@ -65,9 +65,9 @@ MCP-Ansible-Drupal/
 
 ## 🎯 Behavior
 
-- **Clone Repository:** Uses the `cloneRepositoryTool` and `cloneRepositoryPrompt` to fetch the Ansible-Drupal repository into a temporary directory (`/temporal`).
+- **Clone Repository:** Uses the `cloneRepositoryTool` and `cloneRepositoryPrompt` to fetch the DrupAnsible repository into a temporary directory (`/temporal`).
 - **Ansible Setup:** Moves `ansible.cfg` and `vault_pass.txt` from the temporary directory to the project root using `ansibleSetupTool` and `ansibleSetupPrompt`.
-- **Cleanup:** Removes `/temporal` and `/temporal/ansible-drupal` directories after setup with `ansibleCleanUpTool`.
+- **Cleanup:** Removes `/temporal` and `/temporal/drupansible` directories after setup with `ansibleCleanUpTool`.
 - **Prompts:** Each tool is paired with a prompt for user interaction or automation.
 - **Server:** The `server.ts` file can be used to expose these functionalities as part of an MCP server or CLI.
 
@@ -75,10 +75,10 @@ MCP-Ansible-Drupal/
 
 ## 💡 Prompt Example
 
-You can use the following prompt to automate the full Ansible-Drupal setup process:
+You can use the following prompt to automate the full DrupAnsible setup process:
 
 ```
-Clone the Ansible-Drupal repository into the /temporal directory using the cloneRepository tool.
+Clone the Drupansible repository into the /temporal directory using the cloneRepository tool.
 After cloning, run the ansibleSetup tool to move the Ansible configuration files and tools to the project root.
 Then run the ansibleCleanup tool to completely remove the /temporal directory, even if it contains other files or folders.
 ```

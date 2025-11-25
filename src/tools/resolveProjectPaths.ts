@@ -38,22 +38,22 @@ export function resolveProjectPaths(
   if (environment === 'stage') {
     inventoryFile = path.join(
       projectRoot,
-      'tools/ansible/inventories/stage/inventory.yml'
+      'ansible/core/inventories/stage/inventory.yml'
     );
-    playbookFile = path.join(projectRoot, 'tools/ansible/stage-deploy.yml');
+    playbookFile = path.join(projectRoot, 'ansible/core/stage-deploy.yml');
     vaultFile = path.join(
       projectRoot,
-      'tools/ansible/inventories/stage/group_vars/server.yml'
+      'ansible/core/inventories/stage/group_vars/server.yml'
     );
   } else if (environment === 'live') {
     inventoryFile = path.join(
       projectRoot,
-      'tools/ansible/inventories/production/inventory.yml'
+      'ansible/core/inventories/production/inventory.yml'
     );
-    playbookFile = path.join(projectRoot, 'tools/ansible/live-deploy.yml');
+    playbookFile = path.join(projectRoot, 'ansible/core/live-deploy.yml');
     vaultFile = path.join(
       projectRoot,
-      'tools/ansible/inventories/production/group_vars/server.yml'
+      'ansible/core/inventories/production/group_vars/server.yml'
     );
   } else {
     errors.push(`Unsupported environment: ${environment}`);

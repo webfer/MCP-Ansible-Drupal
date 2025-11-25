@@ -36,13 +36,20 @@ export function generateSkipTags(
     if (action === 'install') {
       description = 'Stage install deployment';
       skipTags = withAssets
-        ? ['import_config', 'clean_up', 'auth_cleanup', 's_live']
+        ? [
+            'import_config',
+            'clean_up',
+            'auth_cleanup',
+            's_live',
+            'translations',
+          ]
         : [
             'import_config',
             'deploy_assets',
             'clean_up',
             'auth_cleanup',
             's_live',
+            'translations',
           ];
     } else if (action === 'update') {
       description = 'Stage update deployment';
@@ -59,8 +66,15 @@ export function generateSkipTags(
     if (action === 'install') {
       description = 'Live install deployment';
       skipTags = withAssets
-        ? ['import_config', 'clean_up', 'auth', 's_stage']
-        : ['import_config', 'deploy_assets', 'clean_up', 'auth', 's_stage'];
+        ? ['import_config', 'clean_up', 'auth', 's_stage', 'translations']
+        : [
+            'import_config',
+            'deploy_assets',
+            'clean_up',
+            'auth',
+            's_stage',
+            'translations',
+          ];
     } else if (action === 'update') {
       description = 'Live update deployment';
       skipTags = [

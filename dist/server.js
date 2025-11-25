@@ -11,7 +11,7 @@ const cleanupTool = new AnsibleCleanUpTool();
 const server = new Server({
     name: 'mcp-ansible-drupal',
     version: '1.0.0',
-    description: 'MCP Server for cloning and initializing the Ansible-Drupal repository.',
+    description: 'MCP Server for cloning and initializing the DrupAnsible repository.',
 }, {
     capabilities: {
         tools: {},
@@ -24,14 +24,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
         {
             name: 'cloneRepository',
-            description: 'Clones the Ansible-Drupal repository into the /temporal directory.',
+            description: 'Clones the DrupAnsible repository into the /temporal directory.',
             inputSchema: {
                 type: 'object',
                 properties: {
                     repoUrl: {
                         type: 'string',
                         description: 'The URL of the repository to clone',
-                        default: 'https://github.com/webfer/ansible-drupal.git',
+                        default: 'https://github.com/webfer/drupansible.git',
                     },
                 },
                 required: ['repoUrl'],
@@ -44,7 +44,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         },
         {
             name: 'ansibleCleanup',
-            description: 'Cleans up the /temporal and /temporal/ansible-drupal directories after setup.',
+            description: 'Cleans up the /temporal and /temporal/drupansible directories after setup.',
             inputSchema: { type: 'object', properties: {}, required: [] },
         },
         {
@@ -127,6 +127,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
                         type: 'boolean',
                         description: 'Include asset synchronization during deployment.',
                         default: false,
+                    },
+                    confirmAnswer: {
+                        type: 'string',
+                        enum: ['yes', 'no'],
+                        description: 'Confirmation answer for install action (yes/no).',
                     },
                 },
                 required: ['environment'],
@@ -248,7 +253,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
             return { content: [serverDebug, ...content] };
         }
         case 'executeDeployment': {
-            const rawArgs = (request.params.args ?? {});
+            const rawArgs = (request.params.arguments ??
+                request.params.args ??
+                {});
+            console.error(`[DEBUG] executeDeployment received args: ${JSON.stringify(rawArgs)}`);
             return await handleFirstDeploymentConfirmation(rawArgs);
         }
         case 'getDeploymentLogs': {
@@ -263,7 +271,7 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => ({
     prompts: [
         {
             name: 'clone_ansible_drupal',
-            description: 'Provides information and guidance before cloning the Ansible-Drupal repository.',
+            description: 'Provides information and guidance before cloning the DrupAnsible repository.',
             arguments: [
                 {
                     name: 'owner',
@@ -282,7 +290,7 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => ({
                     description: 'Repository URL',
                     type: 'string',
                     required: true,
-                    default: 'https://github.com/webfer/ansible-drupal.git',
+                    default: 'https://github.com/webfer/drupansible.git',
                 },
                 {
                     name: 'ansible_setup',

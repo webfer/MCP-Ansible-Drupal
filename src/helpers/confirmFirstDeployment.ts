@@ -3,157 +3,83 @@ import { ExecuteDeploymentTool } from '../tools/index.js';
 
 interface PendingDeploymentState {
   awaitingConfirmation: boolean;
-  awaitingType: boolean;
-  args?: Partial<ExecuteDeploymentOptions>;
+  args?: ExecuteDeploymentOptions;
   timeoutId?: NodeJS.Timeout;
 }
 
 let pendingFirstDeployment: PendingDeploymentState = {
   awaitingConfirmation: false,
-  awaitingType: false,
 };
 
 /**
- * Resets the pending deployment state and clears any timeout.
+ * Reset pending deployment state and clear timeout.
  */
 function resetPendingDeployment() {
   if (pendingFirstDeployment.timeoutId) {
     clearTimeout(pendingFirstDeployment.timeoutId);
   }
-  pendingFirstDeployment = { awaitingConfirmation: false, awaitingType: false };
+  pendingFirstDeployment = { awaitingConfirmation: false };
   console.log(
     JSON.stringify({
       type: 'info',
-      message: '✅ Pending deployment state reset',
+      message: 'Reset pending deployment state',
     })
   );
 }
 
 /**
- * Sets a timeout to auto-reset the pending state after 2 minutes.
+ * Auto-timeout after 2 minutes.
  */
-function setPendingTimeout() {
+function startTimeout() {
   if (pendingFirstDeployment.timeoutId) {
     clearTimeout(pendingFirstDeployment.timeoutId);
   }
   pendingFirstDeployment.timeoutId = setTimeout(() => {
-    resetPendingDeployment();
     console.log(
       JSON.stringify({
         type: 'info',
-        message: '⚠️ Pending deployment timed out after 2 minutes',
+        message: 'Pending deployment timed out after 2 minutes',
       })
     );
-  }, 2 * 60 * 1000); // 2 minutes
+    resetPendingDeployment();
+  }, 2 * 60 * 1000);
 }
 
 /**
- * Handles prompting and confirmation for deployment actions.
+ * MAIN HANDLER
  */
 export async function handleFirstDeploymentConfirmation(
   args: Record<string, any>
 ): Promise<{ content: { type: string; text: string }[] }> {
-  console.log(
-    JSON.stringify({
-      type: 'info',
-      message: `✅ handleFirstDeploymentConfirmation called with args: ${JSON.stringify(
-        args
-      )}`,
-    })
-  );
-
   const tool = new ExecuteDeploymentTool();
   const safeArgs = args ?? {};
 
-  // STEP 1: If awaiting deploy type (install/update)
-  if (pendingFirstDeployment.awaitingType) {
-    console.log(
-      JSON.stringify({
-        type: 'info',
-        message: '✅ Pending deployment awaitingType = true',
-      })
-    );
+  console.log(
+    JSON.stringify({
+      type: 'info',
+      message: `confirm handler received: ${JSON.stringify(safeArgs)}`,
+    })
+  );
 
-    const response =
-      safeArgs.action || safeArgs.text || safeArgs.response || '';
-    const normalized = String(response).toLowerCase().trim();
-
-    if (['install', 'initial', 'first'].includes(normalized)) {
-      pendingFirstDeployment = {
-        awaitingType: false,
-        awaitingConfirmation: true,
-        args: { ...pendingFirstDeployment.args, action: 'install' },
-      };
-      setPendingTimeout();
-
-      console.log(
-        JSON.stringify({
-          type: 'info',
-          message: '⚠️ User selected INSTALL, awaiting confirmation',
-        })
-      );
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: '⚠️ This will overwrite existing code on the server. Do you want to continue? (yes/no)',
-          },
-        ],
-      };
-    }
-
-    if (normalized === 'update') {
-      const confirmedArgs = {
-        ...pendingFirstDeployment.args,
-        action: 'update',
-      } as ExecuteDeploymentOptions;
-      resetPendingDeployment();
-
-      console.log(
-        JSON.stringify({
-          type: 'info',
-          message: '✅ User selected UPDATE, running deployment immediately',
-        })
-      );
-
-      return await tool.run(confirmedArgs);
-    }
-
-    console.log(
-      JSON.stringify({
-        type: 'info',
-        message:
-          '⚠️ User response not recognized, asking for "install" or "update"',
-      })
-    );
-
-    return {
-      content: [
-        {
-          type: 'text',
-          text: '⚠️ Please specify either "install" or "update".',
-        },
-      ],
-    };
-  }
-
-  // STEP 2: If awaiting confirmation for install
+  // ------------------------------------------------------------
+  // 1. If awaiting "yes/no" confirmation
+  // ------------------------------------------------------------
   if (pendingFirstDeployment.awaitingConfirmation) {
-    console.log(
-      JSON.stringify({
-        type: 'info',
-        message: '✅ Pending deployment awaitingConfirmation = true',
-      })
-    );
-
-    const response =
+    const userResponse =
       safeArgs.confirmAnswer || safeArgs.text || safeArgs.response || '';
-    const normalized = String(response).toLowerCase().trim();
+    const normalized = String(userResponse).trim().toLowerCase();
 
     if (normalized === 'yes') {
-      const confirmedArgs =
-        pendingFirstDeployment.args as ExecuteDeploymentOptions;
+      // Build a **fully valid ExecuteDeploymentOptions** object
+      const confirmedArgs: ExecuteDeploymentOptions = {
+        action: pendingFirstDeployment.args!.action,
+        environment: pendingFirstDeployment.args!.environment,
+        projectRoot: pendingFirstDeployment.args!.projectRoot,
+        withAssets: pendingFirstDeployment.args!.withAssets,
+        ansibleVaultPassFile: pendingFirstDeployment.args!.ansibleVaultPassFile,
+        extraVars: pendingFirstDeployment.args!.extraVars,
+      };
+
       resetPendingDeployment();
 
       console.log(
@@ -164,9 +90,10 @@ export async function handleFirstDeploymentConfirmation(
       );
 
       const result = await tool.run(confirmedArgs);
+
       return {
         content: [
-          { type: 'text', text: '✅ Proceeding with initial deployment...' },
+          { type: 'text', text: '✅ Proceeding with initial deployment…' },
           ...result.content,
         ],
       };
@@ -174,18 +101,14 @@ export async function handleFirstDeploymentConfirmation(
 
     if (normalized === 'no') {
       resetPendingDeployment();
-
       console.log(
         JSON.stringify({
           type: 'info',
           message: '❌ User cancelled initial deployment',
         })
       );
-
       return {
-        content: [
-          { type: 'text', text: '❌ Initial deployment cancelled by user.' },
-        ],
+        content: [{ type: 'text', text: '❌ Initial deployment cancelled.' }],
       };
     }
 
@@ -194,71 +117,84 @@ export async function handleFirstDeploymentConfirmation(
     };
   }
 
-  // STEP 3: First time request, missing action
-  if (!safeArgs.action) {
-    pendingFirstDeployment = {
-      awaitingType: true,
-      awaitingConfirmation: false,
-      args: {
-        ...safeArgs,
-        environment: safeArgs.environment || 'stage',
-      },
-    };
-    setPendingTimeout();
+  // ------------------------------------------------------------
+  // 2. User provided action directly
+  // ------------------------------------------------------------
+  if (safeArgs.action) {
+    const action = String(safeArgs.action).toLowerCase().trim();
 
-    console.log(
-      JSON.stringify({
-        type: 'info',
-        message: '🤔 User did not specify action, asking for install/update',
-      })
-    );
+    if (['install', 'initial', 'first'].includes(action)) {
+      // Store fully normalized args
+      pendingFirstDeployment = {
+        awaitingConfirmation: true,
+        args: {
+          action: 'install',
+          environment: safeArgs.environment || 'stage',
+          projectRoot: safeArgs.projectRoot,
+          withAssets: safeArgs.withAssets ?? false,
+          ansibleVaultPassFile: safeArgs.ansibleVaultPassFile,
+          extraVars: safeArgs.extraVars,
+        },
+      };
+      startTimeout();
+
+      console.log(
+        JSON.stringify({
+          type: 'info',
+          message:
+            'Action = install → asking for yes/no confirmation before running',
+        })
+      );
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: '⚠️ This will overwrite existing code on the server. Continue? (yes/no)',
+          },
+        ],
+      };
+    }
+
+    if (action === 'update') {
+      const updateArgs: ExecuteDeploymentOptions = {
+        action: 'update',
+        environment: safeArgs.environment || 'stage',
+        projectRoot: safeArgs.projectRoot,
+        withAssets: safeArgs.withAssets ?? false,
+        ansibleVaultPassFile: safeArgs.ansibleVaultPassFile,
+        extraVars: safeArgs.extraVars,
+      };
+
+      console.log(
+        JSON.stringify({
+          type: 'info',
+          message: 'Action = update → running immediately',
+        })
+      );
+
+      return await tool.run(updateArgs);
+    }
 
     return {
       content: [
         {
           type: 'text',
-          text: '🤔 Is this an initial installation or an update? (install/update)',
+          text: '⚠️ Please specify a valid action: "install" or "update".',
         },
       ],
     };
   }
 
-  // STEP 4: Require confirmation for install
-  if (safeArgs.action === 'install') {
-    pendingFirstDeployment = {
-      awaitingType: false,
-      awaitingConfirmation: true,
-      args: {
-        ...safeArgs,
-        environment: safeArgs.environment || 'stage',
+  // ------------------------------------------------------------
+  // 3. Action missing entirely
+  // ------------------------------------------------------------
+  return {
+    content: [
+      {
+        type: 'text',
+        text: '🤔 Missing action. Please specify "install" or "update".',
       },
-    };
-    setPendingTimeout();
-
-    console.log(
-      JSON.stringify({
-        type: 'info',
-        message: '⚠️ Action = install, awaiting user confirmation',
-      })
-    );
-
-    return {
-      content: [
-        {
-          type: 'text',
-          text: '⚠️ This will overwrite existing code on the server. Do you want to continue? (yes/no)',
-        },
-      ],
-    };
-  }
-
-  // STEP 5: For updates, run immediately
-  console.log(
-    JSON.stringify({
-      type: 'info',
-      message: '✅ Action = update, running deployment immediately',
-    })
-  );
-
-  return await tool.run(safeArgs as ExecuteDeploymentOptions);
+    ],
+  };
 }

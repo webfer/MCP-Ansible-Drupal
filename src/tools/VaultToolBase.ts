@@ -62,7 +62,7 @@ export abstract class VaultToolBase {
 
     return path.join(
       projectRoot,
-      `tools/ansible/inventories/${folder}/group_vars/server.yml`
+      `ansible/core/inventories/${folder}/group_vars/server.yml`
     );
   }
 

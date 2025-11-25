@@ -3,7 +3,7 @@ import path from 'path';
 
 /**
  * getDeploymentLogs Tool
- * Reads the latest Ansible deployment logs from tools/tmp/logs.
+ * Reads the latest Ansible deployment logs from ansible/tmp/logs.
  * Keeps only the last 3 deploy logs to avoid buildup.
  */
 export const GetDeploymentLogsTool = {
@@ -23,7 +23,7 @@ export const GetDeploymentLogsTool = {
   },
 
   async run(args: { lines?: number }) {
-    const logDir = path.resolve('./tools/tmp/logs');
+    const logDir = path.resolve('./ansible/tmp/logs');
 
     // Ensure directory exists
     if (!fs.existsSync(logDir)) {
@@ -31,7 +31,7 @@ export const GetDeploymentLogsTool = {
       console.error(
         JSON.stringify({
           type: 'info',
-          message: '✅ Created logs directory at tools/tmp/logs',
+          message: '✅ Created logs directory at ansible/tmp/logs',
         })
       );
       return {

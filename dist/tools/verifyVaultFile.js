@@ -20,8 +20,8 @@ import { execSync } from 'child_process';
  */
 function resolveVaultPath(projectRoot, environment) {
     const inventoryDir = environment === 'stage'
-        ? 'tools/ansible/inventories/stage/group_vars'
-        : 'tools/ansible/inventories/production/group_vars';
+        ? 'ansible/core/inventories/stage/group_vars'
+        : 'ansible/core/inventories/production/group_vars';
     return path.join(projectRoot, inventoryDir, 'server.yml');
 }
 /**
