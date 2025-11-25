@@ -3,7 +3,7 @@ import path from 'path';
 
 /**
  * Moves Ansible configuration files and tools
- * from /temporal/ansible-drupal to the project root.
+ * from /temporal/drupansible to the project root.
  */
 export class AnsibleSetUpTool {
   private pendingOverwriteItems: string[] | null = null;
@@ -12,7 +12,7 @@ export class AnsibleSetUpTool {
     confirm?: boolean;
   }): Promise<{ content: { type: string; text: string }[] }> {
     const workspaceFolder = process.cwd();
-    const sourceDir = path.join(workspaceFolder, 'temporal', 'ansible-drupal');
+    const sourceDir = path.join(workspaceFolder, 'temporal', 'drupansible');
 
     if (!fs.existsSync(sourceDir)) {
       return {
@@ -25,7 +25,7 @@ export class AnsibleSetUpTool {
       };
     }
 
-    const itemsToMove = ['tools', 'ansible.cfg', 'vault_pass.txt'];
+    const itemsToMove = ['ansible', 'ansible.cfg', 'vault_pass.txt'];
     const existingItems: string[] = [];
 
     // Detect existing items in workspace

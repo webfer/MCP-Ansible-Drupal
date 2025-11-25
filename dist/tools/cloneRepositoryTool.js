@@ -12,9 +12,9 @@ export class CloneRepositoryTool {
     }
     async run(args) {
         // Default repository URL
-        const repoUrl = args?.repoUrl ?? 'https://github.com/webfer/ansible-drupal.git';
+        const repoUrl = args?.repoUrl ?? 'https://github.com/webfer/drupansible.git';
         const tempDir = path.join(process.cwd(), 'temporal');
-        const targetDir = path.join(tempDir, 'ansible-drupal');
+        const targetDir = path.join(tempDir, 'drupansible');
         try {
             // Ensure temporal directory exists
             if (!fs.existsSync(tempDir)) {

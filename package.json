@@ -1,6 +1,6 @@
 {
   "name": "@webfer/mcp-ansible-drupal",
-  "description": "A Model Context Protocol (MCP) server that automates Ansible-Drupal configurations.",
+  "description": "A Model Context Protocol (MCP) server that automates DrupAnsible configurations.",
   "version": "1.0.2",
   "author": {
     "name": "Fernando A Castro",

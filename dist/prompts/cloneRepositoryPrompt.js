@@ -6,10 +6,10 @@ export async function GetAnsibleDrupalRepoUrl(args) {
     const { owner, name, repoUrl } = args;
     // 🧠 Extended base prompt
     const basePrompt = `
-You are about to initialize the Ansible-Drupal setup tool for managing Drupal projects.
+You are about to initialize the DrupAnsible setup tool for managing Drupal projects.
 
 This operation will:
-- Use Git to clone the **Ansible-Drupal automation repository** from GitHub.
+- Use Git to clone the **DrupAnsible automation repository** from GitHub.
 - Place it in a temporary working directory inside your local workspace (/temporal).
 - Prepare all necessary Ansible playbooks and configuration files.
 
@@ -22,11 +22,11 @@ Instructions:
 1. Confirm that your workspace contains a valid Drupal installation (with 'vendor' and 'web' directories).
 2. When ready, the tool \`cloneRepository\` will execute:
    \`\`\`bash
-   git clone ${repoUrl} /temporal/ansible-drupal
+   git clone ${repoUrl} /temporal/drupansible
    \`\`\`
-3. After cloning, you can review or customize Ansible playbooks in the /temporal/ansible-drupal directory.
+3. After cloning, you can review or customize Ansible playbooks in the /temporal/drupansible directory.
 
-Proceed to run this operation if you wish to initialize Ansible-Drupal locally.
+Proceed to run this operation if you wish to initialize DrupAnsible locally.
   `.trim();
     return {
         messages: [
