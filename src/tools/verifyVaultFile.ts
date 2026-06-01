@@ -15,7 +15,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 
 export interface VerifyVaultInput {
   projectRoot: string;
@@ -71,7 +71,7 @@ export function verifyVaultFile(input: VerifyVaultInput): VerifyVaultResult {
   if (!isEncrypted) {
     console.log(`⚠️  Vault file not encrypted. Encrypting now: ${vaultPath}`);
     try {
-      execSync(`ansible-vault encrypt ${vaultPath}`, { stdio: 'inherit' });
+      execFileSync('ansible-vault', ['encrypt', vaultPath], { stdio: 'inherit' });
       return {
         valid: true,
         vaultPath,
@@ -127,8 +127,9 @@ export function decryptVaultFile(
   }
 
   console.log(`🔓 Decrypting vault file: ${vaultPath}`);
-  execSync(
-    `ansible-vault decrypt ${vaultPath} --vault-password-file vault_pass.txt`,
+  execFileSync(
+    'ansible-vault',
+    ['decrypt', vaultPath, '--vault-password-file', 'vault_pass.txt'],
     { stdio: 'inherit' }
   );
 

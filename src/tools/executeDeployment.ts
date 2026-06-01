@@ -159,7 +159,23 @@ export async function ExecuteDeployment(
   ];
 
   if (options.extraVars && Object.keys(options.extraVars).length > 0) {
+    const safeKey = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+    const unsafeValue = /[\x00\n\r]/;
     for (const [key, value] of Object.entries(options.extraVars)) {
+      if (!safeKey.test(key)) {
+        const errMsg = `Invalid extraVars key: "${key}"`;
+        messages.push({ type: 'text', text: `❌ ${errMsg}` });
+        const error = new Error(errMsg);
+        (error as any).messages = messages;
+        throw error;
+      }
+      if (unsafeValue.test(String(value))) {
+        const errMsg = `Invalid extraVars value for key "${key}": contains control characters`;
+        messages.push({ type: 'text', text: `❌ ${errMsg}` });
+        const error = new Error(errMsg);
+        (error as any).messages = messages;
+        throw error;
+      }
       ansibleCmd.push('--extra-vars', `${key}=${value}`);
     }
   }
