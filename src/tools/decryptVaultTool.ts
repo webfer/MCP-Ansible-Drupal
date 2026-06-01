@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { VaultToolBase, VaultToolArgs } from './VaultToolBase.js';
 import { verifyVaultFile } from './verifyVaultFile.js';
 
@@ -62,7 +62,7 @@ export class DecryptVaultTool extends VaultToolBase {
         });
       }
 
-      execSync(`ansible-vault decrypt ${vaultPath}`, { stdio: 'inherit' });
+      execFileSync('ansible-vault', ['decrypt', vaultPath], { stdio: 'inherit' });
 
       messages.push({
         type: 'text',

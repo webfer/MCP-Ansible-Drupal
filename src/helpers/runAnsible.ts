@@ -59,7 +59,6 @@ export async function runAnsible(
   return new Promise((resolve) => {
     const proc = spawn(ansibleCmd[0], ansibleCmd.slice(1), {
       cwd,
-      shell: true,
     });
 
     const handleLine = (line: string, isError = false) => {
